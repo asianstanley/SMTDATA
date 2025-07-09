@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA KAISEN SMT</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-100px); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            z-index: 2;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 30px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .table th:hover {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            transition: all 0.3s ease;
+        }
+
+        .table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transform: scale(1.001);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-sold {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-disposed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-dangerous {
+            background: #f5c6cb;
+            color: #721c24;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .value {
+            font-weight: 600;
+            color: #2ecc71;
+        }
+
+        .value.zero {
+            color: #e74c3c;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .summary {
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-top: 1px solid #e9ecef;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .summary-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            .table-container {
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="status-indicator" id="statusIndicator">💾 บันทึกอัตโนมัติ</div>
+            <h1>DATA KAISEN SMT</h1>
+            <p>IN PROCESS</p>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="ค้นหาข้อมูลของเสีย..." onkeyup="searchData()">
+                <span class="search-icon">🔍</span>
+            </div>
+            <button class="btn btn-primary" onclick="filterData()">
+                <span>📊</span> กรองข้อมูล
+            </button>
+            <button class="btn btn-success" onclick="showAddModal()">
+                <span>➕</span> เพิ่มข้อมูล
+            </button>
+            <button class="btn btn-warning" onclick="exportToExcel()">
+                <span>📥</span> ส่งออก Excel
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table class="table" id="wasteTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">วันที่ 📅</th>
+                        <th onclick="sortTable(1)">ประเภท</th>
+                        <th onclick="sortTable(2)">โมเดล</th>
+                        <th onclick="sortTable(3)">ล็อตการผลิต</th>
+                        <th onclick="sortTable(4)">จำนวน</th>
+                        <th onclick="sortTable(5)">หน่วย</th>
+                        <th onclick="sortTable(6)">มูลค่า (บาท)</th>
+                        <th onclick="sortTable(7)">แผนก</th>
+                        <th onclick="sortTable(8)">สถานะ</th>
+                        <th onclick="sortTable(9)">หมายเหตุ</th>
+                        <th>การจัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="wasteTableBody">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary">
+            <h2>📈 สรุปข้อมูล</h2>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>จำนวนรายการทั้งหมด</h3>
+                    <div class="value" id="totalItems">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>มูลค่ารวม (บาท)</h3>
+                    <div class="value" id="totalValue">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>กำลังดำเนินการ</h3>
+                    <div class="value" id="pendingItems">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>แก้ไขแล้ว</h3>
+                    <div class="value" id="completedItems">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding/Editing -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">เพิ่มข้อมูลของเสีย</h2>
+            <form id="wasteForm">
+                <div class="form-group">
+                    <label for="date">วันที่:</label>
+                    <input type="date" id="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="type">ประเภท:</label>
+                    <select id="type" required>
+                        <option value="">เลือกประเภท</option>
+                        <option value="ของเสียจากMounter">ของเสียจากMounter</option>
+                        <option value="ของเสียจากPrinter">ของเสียจากPrinter</option>
+                        <option value="ของเสียจากReflow">ของเสียจากReflow</option>
+                        <option value="ของเสียจากพนักงาน">ของเสียจากพนักงาน</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="model">โมเดล:</label>
+                    <input type="text" id="model" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="lot">ล็อตการผลิต:</label>
+                    <input type="text" id="lot" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantity">จำนวน:</label>
+                    <input type="number" id="quantity" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="unit">หน่วย:</label>
+                    <select id="unit" required>
+                        <option value="">เลือกหน่วย</option>
+                        <option value="กิโลกรัม">กิโลกรัม</option>
+                        <option value="ลิตร">ลิตร</option>
+                        <option value="ชิ้น">ชิ้น</option>
+                        <option value="ตัน">ตัน</option>
+                        <option value="ลูกบาศก์เมตร">ลูกบาศก์เมตร</option>
+                        <option value="แผ่น">แผ่น</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="value">มูลค่า (บาท):</label>
+                    <input type="number" id="value" step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="department">แผนก:</label>
+                    <input type="text" id="department" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="status">สถานะ:</label>
+                    <select id="status" required>
+                        <option value="">เลือกสถานะ</option>
+                        <option value="กำลังตรวจสอบ">กำลังตรวจสอบ</option>
+                        <option value="กำลังแก้ไข">กำลังแก้ไข</option>
+                        <option value="แก้ไขแล้ว">แก้ไขแล้ว</option>
+                        <option value="รอสรุปผล">รอสรุปผล</option>
+                        <option value="สรุปผล">สรุปผล</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">หมายเหตุ:</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let wasteData = [];
+        let currentEditId = null;
+        let filteredData = [];
+        let autoSaveInterval;
+
+        // Load data from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('wasteData');
+            if (saved) {
+                wasteData = JSON.parse(saved);
+                filteredData = [...wasteData];
+                renderTable();
+                updateSummary();
+                updateStatus('✅ โหลดข้อมูลสำเร็จ');
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('wasteData', JSON.stringify(wasteData));
+            updateStatus('💾 บันทึกข้อมูลแล้ว');
+        }
+
+        // Auto save to Excel
+        function autoSaveToExcel() {
+            if (wasteData.length > 0) {
+                exportToExcel('backup');
+                updateStatus('📁 สำรองข้อมูลใน Excel แล้ว');
+            }
+        }
+
+        // Update status indicator
+        function updateStatus(message) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.textContent = message;
+            setTimeout(() => {
+                indicator.textContent = '💾 บันทึกอัตโนมัติ';
+            }, 3000);
+        }
+
+        // Export to Excel
+        function exportToExcel(filename = 'waste_data') {
+            if (wasteData.length === 0) {
+                alert('ไม่มีข้อมูลสำหรับส่งออก');
+                return;
+            }
+
+            const ws_data = [
+                ['วันที่', 'ประเภท', 'โมเดล', 'ล็อตการผลิต', 'จำนวน', 'หน่วย', 'มูลค่า (บาท)', 'แผนก', 'สถานะ', 'หมายเหตุ']
+            ];
+
+            wasteData.forEach(item => {
+                ws_data.push([
+                    formatDate(item.date),
+                    item.type,
+                    item.model || '',
+                    item.lot || '',
+                    item.quantity || 0,
+                    item.unit,
+                    item.value || 0,
+                    item.department,
+                    item.status,
+                    item.notes || ''
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 12}, {wch: 20}, {wch: 15}, {wch: 15}, 
+                {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}, 
+                {wch: 15}, {wch: 30}
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลของเสีย');
+            
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            XLSX.writeFile(wb, `${filename}_${timestamp}.xlsx`);
+        }
+
+        // Search functionality
+        function searchData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            if (query === '') {
+                filteredData = [...wasteData];
+            } else {
+                filteredData = wasteData.filter(item => 
+                    item.type.toLowerCase().includes(query) ||
+                    (item.model && item.model.toLowerCase().includes(query)) ||
+                    (item.lot && item.lot.toLowerCase().includes(query)) ||
+                    item.department.toLowerCase().includes(query) ||
+                    item.status.toLowerCase().includes(query) ||
+                    (item.notes && item.notes.toLowerCase().includes(query))
+                );
+            }
+            renderTable();
+            updateSummary();
+        }
+
+        // Sort table
+        function sortTable(column) {
+            const columns = ['date', 'type', 'model', 'lot', 'quantity', 'unit', 'value', 'department', 'status', 'notes'];
+            const sortKey = columns[column];
+            
+            filteredData.sort((a, b) => {
+                const aVal = a[sortKey] || '';
+                const bVal = b[sortKey] || '';
+                
+                if (sortKey === 'date') {
+                    return new Date(aVal) - new Date(bVal);
+                } else if (sortKey === 'quantity' || sortKey === 'value') {
+                    return aVal - bVal;
+                } else {
+                    return aVal.toString().localeCompare(bVal.toString());
+                }
+            });
+            
+            renderTable();
+        }
+
+        // Filter data
+        function filterData() {
+            // Simple filter by status - can be expanded
+            const status = prompt('กรองตามสถานะ (เว้นว่างสำหรับทั้งหมด):', '');
+            if (status === null) return;
+            
+            if (status === '') {
+                filteredData = [...wasteData];
+            } else {
+                filteredData = wasteData.filter(item => 
+                    item.status.toLowerCase().includes(status.toLowerCase())
+                );
+            }
+            renderTable();
+            updateSummary();
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('wasteTableBody');
+            tbody.innerHTML = '';
+
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                const statusClass = getStatusClass(item.status);
+                const valueClass = item.value > 0 ? 'value' : 'value zero';
+
+                row.innerHTML = `
+                    <td>${formatDate(item.date)}</td>
+                    <td>${item.type}</td>
+                    <td>${item.model || ''}</td>
+                    <td>${item.lot || ''}</td>
+                    <td>${(item.quantity || 0).toLocaleString()}</td>
+                    <td>${item.unit}</td>
+                    <td><span class="${valueClass}">${(item.value || 0).toLocaleString()}</span></td>
+                    <td>${item.department}</td>
+                    <td><span class="status ${statusClass}">${item.status}</span></td>
+                    <td>${item.notes || ''}</td>
+                    <td>
+                        <button class="btn btn-warning" onclick="editItem(${item.id})" style="margin-right: 5px;">✏️</button>
+                        <button class="btn btn-danger" onclick="deleteItem(${item.id})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Update summary
+        function updateSummary() {
+            const totalItems = filteredData.length;
+            const totalValue = filteredData.reduce((sum, item) => sum + (item.value || 0), 0);
+            const pendingItems = filteredData.filter(item => 
+                item.status === 'กำลังตรวจสอบ' || item.status === 'กำลังแก้ไข'
+            ).length;
+            const completedItems = filteredData.filter(item => 
+                item.status === 'แก้ไขแล้ว' || item.status === 'สรุปผล'
+            ).length;
+
+            document.getElementById('totalItems').textContent = totalItems.toLocaleString();
+            document.getElementById('totalValue').textContent = totalValue.toLocaleString();
+            document.getElementById('pendingItems').textContent = pendingItems.toLocaleString();
+            document.getElementById('completedItems').textContent = completedItems.toLocaleString();
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'กำลังตรวจสอบ':
+                case 'กำลังแก้ไข': return 'status-pending';
+                case 'แก้ไขแล้ว': return 'status-sold';
+                case 'รอสรุปผล': return 'status-disposed';
+                case 'สรุปผล': return 'status-disposed';
+                default: return 'status-pending';
+            }
+        }
+
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('th-TH');
+        }
+
+        function showAddModal() {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลของเสีย';
+            document.getElementById('wasteForm').reset();
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('addModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        function editItem(id) {
+            const item = wasteData.find(w => w.id === id);
+            if (!item) return;
+
+            currentEditId = id;
+            document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลของเสีย';
+            document.getElementById('date').value = item.date;
+            document.getElementById('type').value = item.type;
+            document.getElementById('model').value = item.model || '';
+            document.getElementById('lot').value = item.lot || '';
+            document.getElementById('quantity').value = item.quantity || '';
+            document.getElementById('unit').value = item.unit;
+            document.getElementById('value').value = item.value || 0;
+            document.getElementById('department').value = item.department;
+            document.getElementById('status').value = item.status;
+            document.getElementById('notes').value = item.notes || '';
+            document.getElementById('addModal').style.display = 'block';
+        }
+
+        function deleteItem(id) {
+            if (confirm('คุณแน่ใจว่าต้องการลบรายการนี้?')) {
+                wasteData = wasteData.filter(item => item.id !== id);
+                filteredData = [...wasteData];
+                saveData();
+                renderTable();
+                updateSummary();
+                updateStatus('🗑️ ลบข้อมูลแล้ว');
+            }
+        }
+
+        // Form submission
+        document.getElementById('wasteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = {
+                date: document.getElementById('date').value,
+                type: document.getElementById('type').value,
+                model: document.getElementById('model').value,
+                lot: document.getElementById('lot').value,
+                quantity: parseFloat(document.getElementById('quantity').value) || 0,
+                unit: document.getElementById('unit').value,
+                value: parseFloat(document.getElementById('value').value) || 0,
+                department: document.getElementById('department').value,
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value
+            };
+
+            if (currentEditId) {
+                const index = wasteData.findIndex(item => item.id === currentEditId);
+                if (index !== -1) {
+                    wasteData[index] = { id: currentEditId, ...formData };
+                }
+            } else {
+                const newId = Date.now(); // ใช้ timestamp เป็น id
+                wasteData.push({ id: newId, ...formData });
+            }
+            filteredData = [...wasteData];
+            saveData();
+            renderTable();
+            updateSummary();
+            closeModal();
+            updateStatus('✅ บันทึกข้อมูลแล้ว');
+             });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            autoSaveInterval = setInterval(autoSaveToExcel, 1000 * 60 * 5); // Auto backup ทุก 5 นาที
+        });
+    </script>
+</body>
+</html>
