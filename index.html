@@ -819,6 +819,50 @@
             loadData();
             autoSaveInterval = setInterval(autoSaveToExcel, 1000 * 60 * 5); // Auto backup ทุก 5 นาที
         });
+
+
+        async function loadExcelFromURL() {
+        const url = 'https://raw.githubusercontent.com/asianstanley/SMTDATA/main/SMTDATA.xlsx';
+        
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('โหลดไม่สำเร็จ');
+
+            const arrayBuffer = await response.arrayBuffer();
+            const data = new Uint8Array(arrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+            // แปลงข้อมูล Excel มาใส่ในตาราง wasteData
+            wasteData = json.map((row, index) => ({
+                id: Date.now() + index,
+                date: row['วันที่'],
+                type: row['ประเภท'],
+                model: row['โมเดล'],
+                lot: row['ล็อตการผลิต'],
+                quantity: parseFloat(row['จำนวน']) || 0,
+                unit: row['หน่วย'],
+                value: parseFloat(row['มูลค่า (บาท)']) || 0,
+                department: row['แผนก'],
+                status: row['สถานะ'],
+                notes: row['หมายเหตุ']
+            }));
+
+            filteredData = [...wasteData];
+            renderTable();
+            updateSummary();
+            updateStatus('✅ โหลดข้อมูลจาก Excel แล้ว');
+
+        } catch (err) {
+            console.error('❌ โหลด Excel ไม่สำเร็จ:', err);
+            updateStatus('❌ โหลด Excel ไม่สำเร็จ');
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadExcelFromURL(); // โหลด Excel จาก GitHub ทันทีเมื่อเปิดเว็บ
+    });
     </script>
 </body>
 </html>
