@@ -401,9 +401,15 @@
             <button class="btn btn-success" onclick="showAddModal()">
                 <span>➕</span> เพิ่มข้อมูล
             </button>
+
+            <button class="btn btn-secondary" onclick="importExcel()">📤 นำเข้า Excel</button>
+            <input type="file" id="excelFile" accept=".xlsx" style="display: none;" onchange="handleFile(event)">
+
             <button class="btn btn-warning" onclick="exportToExcel()">
                 <span>📥</span> ส่งออก Excel
             </button>
+            <button class="btn btn-primary" onclick="uploadToServer()">📤 อัปโหลดไปเซิร์ฟเวอร์</button>
+            
         </div>
 
         <div class="table-container">
@@ -579,7 +585,7 @@
         }
 
         // Export to Excel
-        function exportToExcel(filename = 'waste_data') {
+        function exportToExcel(filename = 'SMTDATA') {
             if (wasteData.length === 0) {
                 alert('ไม่มีข้อมูลสำหรับส่งออก');
                 return;
@@ -617,7 +623,7 @@
             XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลของเสีย');
             
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            XLSX.writeFile(wb, `${filename}_${timestamp}.xlsx`);
+            XLSX.writeFile(wb, `${filename}.xlsx`);
         }
 
         // Search functionality
@@ -710,7 +716,8 @@
         // Update summary
         function updateSummary() {
             const totalItems = filteredData.length;
-            const totalValue = filteredData.reduce((sum, item) => sum + (item.value || 0), 0);
+            const totalValue = filteredData.reduce((sum, item) => 
+            {return sum + ((item.quantity || 0) * (item.value || 0)); }, 0);
             const pendingItems = filteredData.filter(item => 
                 item.status === 'กำลังตรวจสอบ' || item.status === 'กำลังแก้ไข'
             ).length;
@@ -815,10 +822,7 @@
             updateStatus('✅ บันทึกข้อมูลแล้ว');
              });
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            autoSaveInterval = setInterval(autoSaveToExcel, 1000 * 60 * 5); // Auto backup ทุก 5 นาที
-        });
+        
 
 
         async function loadExcelFromURL() {
@@ -861,8 +865,98 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        loadExcelFromURL(); // โหลด Excel จาก GitHub ทันทีเมื่อเปิดเว็บ
+    loadData();
+    loadExcelFromURL();
+    autoSaveInterval = setInterval(autoSaveToExcel, 1000 * 60 * 5);
+});
+
+
+    function importExcel() {
+    document.getElementById('excelFile').click();
+}
+
+function handleFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        wasteData = json.map((row, index) => ({
+            id: Date.now() + index,
+            date: row['วันที่'],
+            type: row['ประเภท'],
+            model: row['โมเดล'],
+            lot: row['ล็อตการผลิต'],
+            quantity: parseFloat(row['จำนวน']) || 0,
+            unit: row['หน่วย'],
+            value: parseFloat(row['มูลค่า (บาท)']) || 0,
+            department: row['แผนก'],
+            status: row['สถานะ'],
+            notes: row['หมายเหตุ']
+        }));
+
+        filteredData = [...wasteData];
+        renderTable();
+        updateSummary();
+        updateStatus('✅ โหลดข้อมูลจาก Excel แล้ว');
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+function exportToExcel(filename = 'SMTDATA') {
+    if (wasteData.length === 0) {
+        alert('ไม่มีข้อมูลสำหรับส่งออก');
+        return;
+    }
+
+    const ws_data = [
+        ['วันที่', 'ประเภท', 'โมเดล', 'ล็อตการผลิต', 'จำนวน', 'หน่วย', 'มูลค่า (บาท)', 'แผนก', 'สถานะ', 'หมายเหตุ']
+    ];
+
+    wasteData.forEach(item => {
+        ws_data.push([
+            item.date,
+            item.type,
+            item.model || '',
+            item.lot || '',
+            item.quantity || 0,
+            item.unit,
+            item.value || 0,
+            item.department,
+            item.status,
+            item.notes || ''
+        ]);
     });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = [
+        { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
+        { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 15 },
+        { wch: 15 }, { wch: 30 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลของเสีย');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+}
+        function uploadToServer() {
+        fetch('http://localhost:3000/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: wasteData })
+        })
+        .then(res => res.json())
+        .then(result => alert('✅ อัปโหลดสำเร็จ\nURL: ' + result.url))
+        .catch(err => alert('❌ การอัปโหลดล้มเหลว: ' + err));
+    }
+    
     </script>
 </body>
 </html>
