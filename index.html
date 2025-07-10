@@ -408,7 +408,8 @@
             <button class="btn btn-warning" onclick="exportToExcel()">
                 <span>📥</span> ส่งออก Excel
             </button>
-            <button class="btn btn-primary" onclick="uploadToServer()">📤 อัปโหลดไปเซิร์ฟเวอร์</button>
+            <button onclick="saveData()">💾 บันทึก</button>
+
             
         </div>
 
@@ -946,17 +947,69 @@ function exportToExcel(filename = 'SMTDATA') {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     XLSX.writeFile(wb, `${filename}.xlsx`);
 }
-        function uploadToServer() {
-        fetch('http://localhost:3000/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: wasteData })
-        })
-        .then(res => res.json())
-        .then(result => alert('✅ อัปโหลดสำเร็จ\nURL: ' + result.url))
-        .catch(err => alert('❌ การอัปโหลดล้มเหลว: ' + err));
+       async function loadData() {
+      const res = await fetch("http://localhost:3000/data");
+      const data = await res.json();
+
+      const table = document.getElementById("dataTable");
+      table.innerHTML = "";
+
+      // สร้าง header
+      const headers = Object.keys(data[0]);
+      const headerRow = document.createElement("tr");
+      headers.forEach(key => {
+        const th = document.createElement("th");
+        th.innerText = key;
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+
+      // สร้างแถวข้อมูล
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        headers.forEach(key => {
+          const td = document.createElement("td");
+          const input = document.createElement("input");
+          input.value = row[key] || "";
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
     }
-    
+
+    async function saveData() {
+      const table = document.getElementById("dataTable");
+      const rows = table.querySelectorAll("tr");
+      const headers = Array.from(rows[0].querySelectorAll("th")).map(th => th.innerText);
+      const data = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const inputs = row.querySelectorAll("input");
+        const rowData = {};
+        inputs.forEach((input, index) => {
+          rowData[headers[index]] = input.value;
+        });
+        data.push(rowData);
+      }
+
+      const res = await fetch("http://localhost:3000/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert("✅ บันทึกสำเร็จ: " + result.url);
+      } else {
+        alert("❌ บันทกล้มเหลว");
+      }
+    }
+
+    loadData();
+                
     </script>
 </body>
 </html>
