@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DATA KAISEN SMT</title>
+    <!-- โหลดไลบรารี XLSX กับ PapaParse จาก CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -177,6 +180,16 @@
         .btn-secondary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);
         }
 
         .table-container {
@@ -362,6 +375,31 @@
             font-weight: 700;
         }
 
+        .alert {
+            padding: 15px;
+            margin: 20px 30px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -385,9 +423,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="status-indicator" id="statusIndicator">💾 บันทึกอัตโนมัติ</div>
+            <div class="status-indicator" id="statusIndicator">📊 ระบบพร้อมใช้งาน</div>
             <h1>DATA KAISEN SMT</h1>
             <p>IN PROCESS</p>
+        </div>
+
+        <!-- Alert for GitHub Token -->
+        <div class="alert alert-warning" id="tokenAlert">
+            <strong>⚠️ คำเตือน:</strong> กรุณาตั้งค่า GitHub Token ในโค้ด JavaScript ก่อนใช้งานฟังก์ชัน GitHub API
         </div>
 
         <div class="controls">
@@ -401,16 +444,41 @@
             <button class="btn btn-success" onclick="showAddModal()">
                 <span>➕</span> เพิ่มข้อมูล
             </button>
-
-            <button class="btn btn-secondary" onclick="importExcel()">📤 นำเข้า Excel</button>
-            <input type="file" id="excelFile" accept=".xlsx" style="display: none;" onchange="handleFile(event)">
-
-            <button class="btn btn-warning" onclick="exportToExcel()">
-                <span>📥</span> ส่งออก Excel
+            <button class="btn btn-secondary" onclick="loadCSVFromGitHub()">
+                <span>🔄</span> โหลดจาก GitHub
             </button>
-            <button onclick="saveData()">💾 บันทึก</button>
+            <button class="btn btn-primary" onclick="document.getElementById('csvFile').click()">
+                <span>📥</span> นำเข้า CSV
+            </button>
+            <input type="file" id="csvFile" accept=".csv" onchange="handleCSVFile(event)" style="display:none">
+            <button class="btn btn-warning" onclick="exportToCSV()">
+                <span>📤</span> ส่งออก CSV
+            </button>
+            <button class="btn btn-info" onclick="exportAndUploadToGitHub()">
+                <span>☁️</span> ส่งออก + อัปโหลด GitHub
+            </button>
+        </div>
 
-            
+        <div class="summary">
+            <h2>📈 สรุปข้อมูล</h2>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>จำนวนรายการทั้งหมด</h3>
+                    <div class="value" id="totalItems">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>มูลค่ารวม (บาท)</h3>
+                    <div class="value" id="totalValue">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>กำลังดำเนินการ</h3>
+                    <div class="value" id="pendingItems">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>แก้ไขแล้ว</h3>
+                    <div class="value" id="completedItems">0</div>
+                </div>
+            </div>
         </div>
 
         <div class="table-container">
@@ -436,27 +504,7 @@
             </table>
         </div>
 
-        <div class="summary">
-            <h2>📈 สรุปข้อมูล</h2>
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <h3>จำนวนรายการทั้งหมด</h3>
-                    <div class="value" id="totalItems">0</div>
-                </div>
-                <div class="summary-card">
-                    <h3>มูลค่ารวม (บาท)</h3>
-                    <div class="value" id="totalValue">0</div>
-                </div>
-                <div class="summary-card">
-                    <h3>กำลังดำเนินการ</h3>
-                    <div class="value" id="pendingItems">0</div>
-                </div>
-                <div class="summary-card">
-                    <h3>แก้ไขแล้ว</h3>
-                    <div class="value" id="completedItems">0</div>
-                </div>
-            </div>
-        </div>
+        
     </div>
 
     <!-- Modal for Adding/Editing -->
@@ -543,473 +591,430 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        // ======= CONFIGURATION =======
+        const GITHUB_CONFIG = {
+            owner: 'asianstanley',
+            repo: 'SMTDATA',
+            path: 'SMTDATA.csv',
+            branch: 'main',
+            token: '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' // เปลี่ยนเป็น token จริงของคุณ
+        };
+
+        // ======= GLOBAL VARIABLES =======
         let wasteData = [];
         let currentEditId = null;
         let filteredData = [];
-        let autoSaveInterval;
 
-        // Load data from localStorage
-        function loadData() {
-            const saved = localStorage.getItem('wasteData');
-            if (saved) {
-                wasteData = JSON.parse(saved);
-                filteredData = [...wasteData];
-                renderTable();
-                updateSummary();
-                updateStatus('✅ โหลดข้อมูลสำเร็จ');
-            }
+        // ======= INITIALIZATION =======
+        function initializeData() {
+            wasteData = [];   // ล้างข้อมูลทั้งหมด
+            filteredData = [...wasteData];  // ให้ filteredData ว่างเช่นกัน
+            renderTable();    // แสดงตาราง (จะเป็นตารางว่าง)
+            updateSummary();  // อัปเดตสรุปข้อมูล (0 รายการ)
         }
+            
+            // ตรวจสอบ GitHub Token
+            if (GITHUB_CONFIG.token === 'YOUR_GITHUB_TOKEN') {
+                document.getElementById('tokenAlert').style.display = 'block';
+            } else {
+                document.getElementById('tokenAlert').style.display = 'none';
+            
+          }   
 
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('wasteData', JSON.stringify(wasteData));
-            updateStatus('💾 บันทึกข้อมูลแล้ว');
-        }
-
-        // Auto save to Excel
-        function autoSaveToExcel() {
-            if (wasteData.length > 0) {
-                exportToExcel('backup');
-                updateStatus('📁 สำรองข้อมูลใน Excel แล้ว');
-            }
-        }
-
-        // Update status indicator
+        // ======= UTILITY FUNCTIONS =======
         function updateStatus(message) {
             const indicator = document.getElementById('statusIndicator');
             indicator.textContent = message;
             setTimeout(() => {
-                indicator.textContent = '💾 บันทึกอัตโนมัติ';
+                indicator.textContent = '📊 ระบบพร้อมใช้งาน';
             }, 3000);
         }
 
-        // Export to Excel
-        function exportToExcel(filename = 'SMTDATA') {
-            if (wasteData.length === 0) {
-                alert('ไม่มีข้อมูลสำหรับส่งออก');
-                return;
-            }
+        function generateCSVContent() {
+            const header = ['วันที่', 'ประเภท', 'โมเดล', 'ล็อตการผลิต', 'จำนวน', 'หน่วย', 'มูลค่า (บาท)', 'แผนก', 'สถานะ', 'หมายเหตุ'];
+            const rows = wasteData.map(item => [
+                item.date,
+                item.type,
+                item.model || '',
+                item.lot || '',
+                item.quantity || 0,
+                item.unit,
+                item.value || 0,
+                item.department,
+                item.status,
+                item.notes || ''
+            ]);
 
-            const ws_data = [
-                ['วันที่', 'ประเภท', 'โมเดล', 'ล็อตการผลิต', 'จำนวน', 'หน่วย', 'มูลค่า (บาท)', 'แผนก', 'สถานะ', 'หมายเหตุ']
-            ];
-
-            wasteData.forEach(item => {
-                ws_data.push([
-                    formatDate(item.date),
-                    item.type,
-                    item.model || '',
-                    item.lot || '',
-                    item.quantity || 0,
-                    item.unit,
-                    item.value || 0,
-                    item.department,
-                    item.status,
-                    item.notes || ''
-                ]);
-            });
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
-            
-            // Set column widths
-            ws['!cols'] = [
-                {wch: 12}, {wch: 20}, {wch: 15}, {wch: 15}, 
-                {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}, 
-                {wch: 15}, {wch: 30}
-            ];
-
-            XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลของเสีย');
-            
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            XLSX.writeFile(wb, `${filename}.xlsx`);
+            return [header, ...rows]
+                .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                .join('\n');
         }
 
-        // Search functionality
-        function searchData() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            if (query === '') {
-                filteredData = [...wasteData];
-            } else {
-                filteredData = wasteData.filter(item => 
-                    item.type.toLowerCase().includes(query) ||
-                    (item.model && item.model.toLowerCase().includes(query)) ||
-                    (item.lot && item.lot.toLowerCase().includes(query)) ||
-                    item.department.toLowerCase().includes(query) ||
-                    item.status.toLowerCase().includes(query) ||
-                    (item.notes && item.notes.toLowerCase().includes(query))
-                );
-            }
-            renderTable();
-            updateSummary();
-        }
+        // ======= GITHUB API FUNCTIONS =======
+        async function loadCSVFromGitHub() {
+        const url = `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.path}?t=${Date.now()}`;
+        console.log("🔗 URL:", url);
+            try {
+                updateStatus('🔄 กำลังโหลดข้อมูลจาก GitHub...');
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('โหลดไฟล์ CSV ไม่สำเร็จ');
 
-        // Sort table
-        function sortTable(column) {
-            const columns = ['date', 'type', 'model', 'lot', 'quantity', 'unit', 'value', 'department', 'status', 'notes'];
-            const sortKey = columns[column];
-            
-            filteredData.sort((a, b) => {
-                const aVal = a[sortKey] || '';
-                const bVal = b[sortKey] || '';
+                const csvText = await response.text();
                 
-                if (sortKey === 'date') {
-                    return new Date(aVal) - new Date(bVal);
-                } else if (sortKey === 'quantity' || sortKey === 'value') {
-                    return aVal - bVal;
-                } else {
-                    return aVal.toString().localeCompare(bVal.toString());
+                const result = Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: true
+                });
+
+                if (result.errors.length > 0) {
+                    console.warn('CSV parsing warnings:', result.errors);
                 }
-            });
-            
-            renderTable();
-        }
 
-        // Filter data
-        function filterData() {
-            // Simple filter by status - can be expanded
-            const status = prompt('กรองตามสถานะ (เว้นว่างสำหรับทั้งหมด):', '');
-            if (status === null) return;
-            
-            if (status === '') {
+                wasteData = result.data.map((row, index) => ({
+                    id: Date.now() + index,
+                    date: row['วันที่'] || '',
+                    type: row['ประเภท'] || '',
+                    model: row['โมเดล'] || '',
+                    lot: row['ล็อตการผลิต'] || '',
+                    quantity: parseFloat(row['จำนวน']) || 0,
+                    unit: row['หน่วย'] || '',
+                    value: parseFloat(row['มูลค่า (บาท)']) || 0,
+                    department: row['แผนก'] || '',
+                    status: row['สถานะ'] || '',
+                    notes: row['หมายเหตุ'] || ''
+                }));
+
                 filteredData = [...wasteData];
-            } else {
-                filteredData = wasteData.filter(item => 
-                    item.status.toLowerCase().includes(status.toLowerCase())
-                );
-            }
-            renderTable();
-            updateSummary();
-        }
-
-        // Render table
-        function renderTable() {
-            const tbody = document.getElementById('wasteTableBody');
-            tbody.innerHTML = '';
-
-            filteredData.forEach(item => {
-                const row = document.createElement('tr');
-                const statusClass = getStatusClass(item.status);
-                const valueClass = item.value > 0 ? 'value' : 'value zero';
-
-                row.innerHTML = `
-                    <td>${formatDate(item.date)}</td>
-                    <td>${item.type}</td>
-                    <td>${item.model || ''}</td>
-                    <td>${item.lot || ''}</td>
-                    <td>${(item.quantity || 0).toLocaleString()}</td>
-                    <td>${item.unit}</td>
-                    <td><span class="${valueClass}">${(item.value || 0).toLocaleString()}</span></td>
-                    <td>${item.department}</td>
-                    <td><span class="status ${statusClass}">${item.status}</span></td>
-                    <td>${item.notes || ''}</td>
-                    <td>
-                        <button class="btn btn-warning" onclick="editItem(${item.id})" style="margin-right: 5px;">✏️</button>
-                        <button class="btn btn-danger" onclick="deleteItem(${item.id})">🗑️</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Update summary
-        function updateSummary() {
-            const totalItems = filteredData.length;
-            const totalValue = filteredData.reduce((sum, item) => 
-            {return sum + ((item.quantity || 0) * (item.value || 0)); }, 0);
-            const pendingItems = filteredData.filter(item => 
-                item.status === 'กำลังตรวจสอบ' || item.status === 'กำลังแก้ไข'
-            ).length;
-            const completedItems = filteredData.filter(item => 
-                item.status === 'แก้ไขแล้ว' || item.status === 'สรุปผล'
-            ).length;
-
-            document.getElementById('totalItems').textContent = totalItems.toLocaleString();
-            document.getElementById('totalValue').textContent = totalValue.toLocaleString();
-            document.getElementById('pendingItems').textContent = pendingItems.toLocaleString();
-            document.getElementById('completedItems').textContent = completedItems.toLocaleString();
-        }
-
-        function getStatusClass(status) {
-            switch(status) {
-                case 'กำลังตรวจสอบ':
-                case 'กำลังแก้ไข': return 'status-pending';
-                case 'แก้ไขแล้ว': return 'status-sold';
-                case 'รอสรุปผล': return 'status-disposed';
-                case 'สรุปผล': return 'status-disposed';
-                default: return 'status-pending';
-            }
-        }
-
-        function formatDate(dateStr) {
-            return new Date(dateStr).toLocaleDateString('th-TH');
-        }
-
-        function showAddModal() {
-            currentEditId = null;
-            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลของเสีย';
-            document.getElementById('wasteForm').reset();
-            document.getElementById('date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('addModal').style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('addModal').style.display = 'none';
-        }
-
-        function editItem(id) {
-            const item = wasteData.find(w => w.id === id);
-            if (!item) return;
-
-            currentEditId = id;
-            document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลของเสีย';
-            document.getElementById('date').value = item.date;
-            document.getElementById('type').value = item.type;
-            document.getElementById('model').value = item.model || '';
-            document.getElementById('lot').value = item.lot || '';
-            document.getElementById('quantity').value = item.quantity || '';
-            document.getElementById('unit').value = item.unit;
-            document.getElementById('value').value = item.value || 0;
-            document.getElementById('department').value = item.department;
-            document.getElementById('status').value = item.status;
-            document.getElementById('notes').value = item.notes || '';
-            document.getElementById('addModal').style.display = 'block';
-        }
-
-        function deleteItem(id) {
-            if (confirm('คุณแน่ใจว่าต้องการลบรายการนี้?')) {
-                wasteData = wasteData.filter(item => item.id !== id);
-                filteredData = [...wasteData];
-                saveData();
                 renderTable();
                 updateSummary();
-                updateStatus('🗑️ ลบข้อมูลแล้ว');
+                updateStatus('✅ โหลดข้อมูลจาก GitHub แล้ว');
+
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                updateStatus('❌ โหลดข้อมูลไม่สำเร็จ');
             }
         }
 
-        // Form submission
-        document.getElementById('wasteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        async function updateCSVtoGitHub(csvContent) {
+            if (GITHUB_CONFIG.token === 'YOUR_GITHUB_TOKEN') {
+                updateStatus('❌ กรุณาตั้งค่า GitHub Token');
+                return false;
+            }
 
-            const formData = {
-                date: document.getElementById('date').value,
-                type: document.getElementById('type').value,
-                model: document.getElementById('model').value,
-                lot: document.getElementById('lot').value,
-                quantity: parseFloat(document.getElementById('quantity').value) || 0,
-                unit: document.getElementById('unit').value,
-                value: parseFloat(document.getElementById('value').value) || 0,
-                department: document.getElementById('department').value,
-                status: document.getElementById('status').value,
-                notes: document.getElementById('notes').value
-            };
+            try {
+                updateStatus('🔄 กำลังอัปเดตไฟล์ CSV บน GitHub...');
+                
+                // 1. ดึงไฟล์ปัจจุบันจาก GitHub
+                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}`, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
 
-            if (currentEditId) {
-                const index = wasteData.findIndex(item => item.id === currentEditId);
-                if (index !== -1) {
-                    wasteData[index] = { id: currentEditId, ...formData };
+                let sha = null;
+                if (getResponse.ok) {
+                    const fileData = await getResponse.json();
+                    sha = fileData.sha;
+                } else if (getResponse.status !== 404) {
+                    throw new Error('ไม่สามารถดึงไฟล์เดิมได้');
                 }
-            } else {
-                const newId = Date.now(); // ใช้ timestamp เป็น id
-                wasteData.push({ id: newId, ...formData });
+
+                // 2. เตรียมข้อมูลสำหรับอัปโหลด
+                const base64Content = btoa(unescape(encodeURIComponent(csvContent)));
+                
+                const requestBody = {
+                    message: `Update CSV data from web app - ${new Date().toISOString()}`,
+                    content: base64Content,
+                    branch: GITHUB_CONFIG.branch
+                };
+
+                if (sha) {
+                    requestBody.sha = sha;
+                }
+
+                // 3. ส่ง PUT request เพื่ออัปเดตไฟล์
+                const putResponse = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'X-GitHub-Api-Version': '2022-11-28',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!putResponse.ok) {
+                    const errorData = await putResponse.json();
+                    throw new Error('อัปเดตไฟล์ไม่สำเร็จ: ' + (errorData.message || putResponse.statusText));
+                }
+
+                const result = await putResponse.json();
+                console.log('อัปเดตไฟล์สำเร็จ', result);
+                updateStatus('✅ อัปเดตไฟล์ CSV บน GitHub สำเร็จ');
+                return true;
+
+            } catch (error) {
+                console.error('Error updating GitHub:', error);
+                updateStatus('❌ อัปเดตไฟล์ CSV บน GitHub ไม่สำเร็จ: ' + error.message);
+                return false;
             }
-            filteredData = [...wasteData];
-            saveData();
-            renderTable();
-            updateSummary();
-            closeModal();
-            updateStatus('✅ บันทึกข้อมูลแล้ว');
-             });
-
-        
-
-
-        async function loadExcelFromURL() {
-        const url = 'https://raw.githubusercontent.com/asianstanley/SMTDATA/main/SMTDATA.xlsx';
-        
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('โหลดไม่สำเร็จ');
-
-            const arrayBuffer = await response.arrayBuffer();
-            const data = new Uint8Array(arrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-            // แปลงข้อมูล Excel มาใส่ในตาราง wasteData
-            wasteData = json.map((row, index) => ({
-                id: Date.now() + index,
-                date: row['วันที่'],
-                type: row['ประเภท'],
-                model: row['โมเดล'],
-                lot: row['ล็อตการผลิต'],
-                quantity: parseFloat(row['จำนวน']) || 0,
-                unit: row['หน่วย'],
-                value: parseFloat(row['มูลค่า (บาท)']) || 0,
-                department: row['แผนก'],
-                status: row['สถานะ'],
-                notes: row['หมายเหตุ']
-            }));
-
-            filteredData = [...wasteData];
-            renderTable();
-            updateSummary();
-            updateStatus('✅ โหลดข้อมูลจาก Excel แล้ว');
-
-        } catch (err) {
-            console.error('❌ โหลด Excel ไม่สำเร็จ:', err);
-            updateStatus('❌ โหลด Excel ไม่สำเร็จ');
         }
+
+        async function autoUpdateGitHub() {
+            const csvContent = generateCSVContent();
+            await updateCSVtoGitHub(csvContent);
+        }
+
+        // ======= CSV EXPORT FUNCTION =======
+function exportToCSV(filename = 'SMTDATA.csv') {
+    if (wasteData.length === 0) {
+        updateStatus('⚠️ ไม่มีข้อมูลให้ส่งออก');
+        return;
     }
+    const csvContent = generateCSVContent();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
 
-    window.addEventListener('DOMContentLoaded', () => {
-    loadData();
-    loadExcelFromURL();
-    autoSaveInterval = setInterval(autoSaveToExcel, 1000 * 60 * 5);
-});
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
 
-
-    function importExcel() {
-    document.getElementById('excelFile').click();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    updateStatus('✅ ส่งออก CSV สำเร็จ');
 }
 
-function handleFile(event) {
+// ======= HANDLE CSV IMPORT FROM LOCAL FILE =======
+function handleCSVFile(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        const csvText = e.target.result;
+        const result = Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: true
+        });
 
-        wasteData = json.map((row, index) => ({
+        if (result.errors.length > 0) {
+            console.warn('CSV parsing warnings:', result.errors);
+            updateStatus('⚠️ พบข้อผิดพลาดในการอ่านไฟล์ CSV');
+        }
+
+        wasteData = result.data.map((row, index) => ({
             id: Date.now() + index,
-            date: row['วันที่'],
-            type: row['ประเภท'],
-            model: row['โมเดล'],
-            lot: row['ล็อตการผลิต'],
+            date: row['วันที่'] || '',
+            type: row['ประเภท'] || '',
+            model: row['โมเดล'] || '',
+            lot: row['ล็อตการผลิต'] || '',
             quantity: parseFloat(row['จำนวน']) || 0,
-            unit: row['หน่วย'],
+            unit: row['หน่วย'] || '',
             value: parseFloat(row['มูลค่า (บาท)']) || 0,
-            department: row['แผนก'],
-            status: row['สถานะ'],
-            notes: row['หมายเหตุ']
+            department: row['แผนก'] || '',
+            status: row['สถานะ'] || '',
+            notes: row['หมายเหตุ'] || ''
         }));
 
         filteredData = [...wasteData];
         renderTable();
         updateSummary();
-        updateStatus('✅ โหลดข้อมูลจาก Excel แล้ว');
+        updateStatus('✅ โหลดข้อมูลจากไฟล์ CSV แล้ว');
     };
 
-    reader.readAsArrayBuffer(file);
+    reader.readAsText(file);
 }
 
-function exportToExcel(filename = 'SMTDATA') {
-    if (wasteData.length === 0) {
-        alert('ไม่มีข้อมูลสำหรับส่งออก');
-        return;
+// ======= TABLE RENDERING FUNCTION =======
+function renderTable() {
+    const tbody = document.getElementById('wasteTableBody');
+    tbody.innerHTML = '';
+
+    filteredData.forEach(item => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td>${item.date}</td>
+            <td>${item.type}</td>
+            <td>${item.model}</td>
+            <td>${item.lot}</td>
+            <td>${item.quantity}</td>
+            <td>${item.unit}</td>
+            <td>${item.value.toFixed(2)}</td>
+            <td>${item.department}</td>
+            <td><span class="status status-${item.status.toLowerCase().replace(/\s/g, '')}">${item.status}</span></td>
+            <td>${item.notes || ''}</td>
+            <td>
+                <button class="btn btn-info" onclick="editItem(${item.id})">แก้ไข</button>
+                <button class="btn btn-danger" onclick="deleteItem(${item.id})">ลบ</button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+// ======= UPDATE SUMMARY =======
+function updateSummary() {
+    document.getElementById('totalItems').textContent = wasteData.length;
+    const totalVal = wasteData.reduce((acc, cur) => acc + ((cur.value || 0) * (cur.quantity || 0)), 0);
+    document.getElementById('totalValue').textContent = totalVal.toFixed(2);
+    const pendingCount = wasteData.filter(item => item.status === 'กำลังตรวจสอบ' || item.status === 'กำลังแก้ไข').length;
+    document.getElementById('pendingItems').textContent = pendingCount;
+    const completedCount = wasteData.filter(item => item.status === 'แก้ไขแล้ว').length;
+    document.getElementById('completedItems').textContent = completedCount;
+}
+
+// ======= SEARCH FUNCTION =======
+function searchData() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!query) {
+        filteredData = [...wasteData];
+    } else {
+        filteredData = wasteData.filter(item =>
+            item.type.toLowerCase().includes(query) ||
+            item.model.toLowerCase().includes(query) ||
+            item.lot.toLowerCase().includes(query) ||
+            item.department.toLowerCase().includes(query) ||
+            item.status.toLowerCase().includes(query) ||
+            (item.notes && item.notes.toLowerCase().includes(query))
+        );
+    }
+    renderTable();
+    updateSummary();
+}
+
+// ======= FILTER FUNCTION (ตัวอย่าง) =======
+function filterData() {
+    // ตัวอย่างกรองข้อมูลแสดงเฉพาะของเสียที่สถานะ 'กำลังตรวจสอบ'
+    filteredData = wasteData.filter(item => item.status === 'กำลังตรวจสอบ');
+    renderTable();
+    updateSummary();
+    updateStatus('🔍 กรองข้อมูลสำเร็จ');
+}
+
+// ======= SHOW MODAL FOR ADDING NEW ITEM =======
+function showAddModal() {
+    currentEditId = null;
+    document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลของเสีย';
+    document.getElementById('wasteForm').reset();
+    document.getElementById('addModal').style.display = 'block';
+}
+
+// ======= CLOSE MODAL =======
+function closeModal() {
+    document.getElementById('addModal').style.display = 'none';
+}
+
+// ======= HANDLE FORM SUBMIT =======
+document.getElementById('wasteForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const newItem = {
+        id: currentEditId || Date.now(),
+        date: document.getElementById('date').value,
+        type: document.getElementById('type').value,
+        model: document.getElementById('model').value.trim(),
+        lot: document.getElementById('lot').value.trim(),
+        quantity: Number(document.getElementById('quantity').value),
+        unit: document.getElementById('unit').value,
+        value: parseFloat(document.getElementById('value').value) || 0,
+        department: document.getElementById('department').value.trim(),
+        status: document.getElementById('status').value,
+        notes: document.getElementById('notes').value.trim()
+    };
+
+    if (currentEditId) {
+        // แก้ไขข้อมูล
+        const index = wasteData.findIndex(item => item.id === currentEditId);
+        if (index > -1) {
+            wasteData[index] = newItem;
+        }
+    } else {
+        // เพิ่มข้อมูลใหม่
+        wasteData.push(newItem);
     }
 
-    const ws_data = [
-        ['วันที่', 'ประเภท', 'โมเดล', 'ล็อตการผลิต', 'จำนวน', 'หน่วย', 'มูลค่า (บาท)', 'แผนก', 'สถานะ', 'หมายเหตุ']
-    ];
+    filteredData = [...wasteData];
+    renderTable();
+    updateSummary();
+    closeModal();
+    updateStatus('✅ บันทึกข้อมูลเรียบร้อย');
+});
 
-    wasteData.forEach(item => {
-        ws_data.push([
-            item.date,
-            item.type,
-            item.model || '',
-            item.lot || '',
-            item.quantity || 0,
-            item.unit,
-            item.value || 0,
-            item.department,
-            item.status,
-            item.notes || ''
-        ]);
+// ======= EDIT ITEM FUNCTION =======
+function editItem(id) {
+    currentEditId = id;
+    const item = wasteData.find(i => i.id === id);
+    if (!item) return;
+
+    document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลของเสีย';
+    document.getElementById('date').value = item.date;
+    document.getElementById('type').value = item.type;
+    document.getElementById('model').value = item.model;
+    document.getElementById('lot').value = item.lot;
+    document.getElementById('quantity').value = item.quantity;
+    document.getElementById('unit').value = item.unit;
+    document.getElementById('value').value = item.value;
+    document.getElementById('department').value = item.department;
+    document.getElementById('status').value = item.status;
+    document.getElementById('notes').value = item.notes;
+
+    document.getElementById('addModal').style.display = 'block';
+}
+
+// ======= DELETE ITEM FUNCTION =======
+function deleteItem(id) {
+    if (confirm('คุณต้องการลบข้อมูลนี้ใช่หรือไม่?')) {
+        wasteData = wasteData.filter(item => item.id !== id);
+        filteredData = [...wasteData];
+        renderTable();
+        updateSummary();
+        updateStatus('✅ ลบข้อมูลเรียบร้อย');
+    }
+}
+
+// ======= SORT TABLE =======
+function sortTable(columnIndex) {
+    const keys = ['date', 'type', 'model', 'lot', 'quantity', 'unit', 'value', 'department', 'status', 'notes'];
+
+    const key = keys[columnIndex];
+    if (!key) return;
+
+    const ascending = !sortTable.asc;
+    sortTable.asc = ascending;
+
+    filteredData.sort((a, b) => {
+        if (typeof a[key] === 'number') {
+            return ascending ? a[key] - b[key] : b[key] - a[key];
+        }
+        return ascending
+            ? String(a[key]).localeCompare(String(b[key]))
+            : String(b[key]).localeCompare(String(a[key]));
     });
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-    ws['!cols'] = [
-        { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
-        { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 15 },
-        { wch: 15 }, { wch: 30 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลของเสีย');
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    XLSX.writeFile(wb, `${filename}.xlsx`);
+    renderTable();
 }
-       async function loadData() {
-      const res = await fetch("http://localhost:3000/data");
-      const data = await res.json();
 
-      const table = document.getElementById("dataTable");
-      table.innerHTML = "";
-
-      // สร้าง header
-      const headers = Object.keys(data[0]);
-      const headerRow = document.createElement("tr");
-      headers.forEach(key => {
-        const th = document.createElement("th");
-        th.innerText = key;
-        headerRow.appendChild(th);
-      });
-      table.appendChild(headerRow);
-
-      // สร้างแถวข้อมูล
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-        headers.forEach(key => {
-          const td = document.createElement("td");
-          const input = document.createElement("input");
-          input.value = row[key] || "";
-          td.appendChild(input);
-          tr.appendChild(td);
-        });
-        table.appendChild(tr);
-      });
+// ======= EXPORT AND UPLOAD TO GITHUB =======
+async function exportAndUploadToGitHub() {
+    const csvContent = generateCSVContent();
+    const success = await updateCSVtoGitHub(csvContent);
+    if (success) {
+        updateStatus('✅ ส่งออกและอัปโหลด GitHub สำเร็จ');
     }
+}
 
-    async function saveData() {
-      const table = document.getElementById("dataTable");
-      const rows = table.querySelectorAll("tr");
-      const headers = Array.from(rows[0].querySelectorAll("th")).map(th => th.innerText);
-      const data = [];
-
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const inputs = row.querySelectorAll("input");
-        const rowData = {};
-        inputs.forEach((input, index) => {
-          rowData[headers[index]] = input.value;
-        });
-        data.push(rowData);
-      }
-
-      const res = await fetch("http://localhost:3000/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-
-      const result = await res.json();
-      if (result.success) {
-        alert("✅ บันทึกสำเร็จ: " + result.url);
-      } else {
-        alert("❌ บันทกล้มเหลว");
-      }
-    }
-
-    loadData();
-                
-    </script>
+// ======= INITIALIZE =======
+initializeData();
+</script>
 </body>
 </html>
