@@ -13,15 +13,17 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Create CSV file from payload
+        shell: bash
         run: |
-          cat <<EOF > SMTDATA.csv
-${{ github.event.client_payload.csv_content }}
-EOF
+          set -e
+          echo "${{ github.event.client_payload.csv_content }}" > SMTDATA.csv
 
       - name: Commit and push changes
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        shell: bash
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add SMTDATA.csv
