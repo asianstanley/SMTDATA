@@ -12,18 +12,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create CSV file from payload
-        shell: bash
+      - name: Decode base64 and write CSV file
         run: |
-          set -e
-          echo "${{ github.event.client_payload.csv_content }}" > SMTDATA.csv
+          echo "${{ github.event.client_payload.csv_content_base64 }}" | base64 --decode > SMTDATA.csv
 
       - name: Commit and push changes
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        shell: bash
         run: |
-          set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add SMTDATA.csv
