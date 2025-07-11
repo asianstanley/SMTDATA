@@ -653,8 +653,7 @@
 
         // ======= GITHUB API FUNCTIONS =======
         async function loadCSVFromGitHub() {
-        const url = `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.path}?t=${Date.now()}`;
-        console.log("🔗 URL:", url);
+            const url = `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.path}`;
             try {
                 updateStatus('🔄 กำลังโหลดข้อมูลจาก GitHub...');
                 const response = await fetch(url);
