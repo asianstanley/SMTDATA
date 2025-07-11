@@ -1,24 +1,26 @@
-name: Update CSV File
+name: Update SMTDATA.csv
 
 on:
   repository_dispatch:
-    types: [update-csv]
+    types: [update_csv]
 
 jobs:
-  update-file:
+  update:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Decode base64 CSV and save to file
+    - name: Decode CSV and save
       run: |
         echo "${{ github.event.client_payload.csv_base64 }}" | base64 -d > SMTDATA.csv
 
-    - name: Commit and push CSV
+    - name: Commit and push
       run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
+        git config --global user.name "github-actions"
+        git config --global user.email "action@github.com"
         git add SMTDATA.csv
-        git commit -m "📦 Update CSV via Actions" || echo "No changes"
+        git commit -m "อัปเดต CSV อัตโนมัติ"
         git push
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT }}
