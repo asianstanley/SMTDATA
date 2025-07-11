@@ -14,7 +14,9 @@ jobs:
 
       - name: Create CSV file from payload
         run: |
-          echo "${{ github.event.client_payload.csv_content }}" > SMTDATA.csv
+          cat <<EOF > SMTDATA.csv
+${{ github.event.client_payload.csv_content }}
+EOF
 
       - name: Commit and push changes
         env:
