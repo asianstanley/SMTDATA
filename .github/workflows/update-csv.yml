@@ -1,25 +1,25 @@
-name: Update CSV File
+name: Update CSV
 
 on:
   repository_dispatch:
     types: [update_csv]
 
 jobs:
-  update_csv:
+  update-csv-file:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Write CSV content to file
+      - name: Update CSV file
         run: |
-          echo "${{ github.event.client_payload.csv_content }}" > data.csv
+          echo "${{ github.event.client_payload.csv_content }}" > SMTDATA.csv
 
       - name: Commit and push changes
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data.csv
-          git commit -m "อัปเดตไฟล์ CSV จากเว็บแอป"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add SMTDATA.csv
+          git commit -m "Update CSV via GitHub Actions"
           git push
