@@ -8,18 +8,24 @@ jobs:
   update-csv-file:
     runs-on: ubuntu-latest
 
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Update CSV file
+      - name: Save CSV content to file
         run: |
-          echo '${{ toJson(github.event.client_payload.csv_content) }}' | jq -r . > SMTDATA.csv
+          echo "${{ github.event.client_payload.csv_content }}" > SMTDATA.csv
 
-      - name: Commit and push changes
+      - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
           git add SMTDATA.csv
-          git commit -m "Update CSV via GitHub Actions" || echo "No changes to commit"
-          git push
+          git commit -m "Update CSV via GitHub Actions"
+          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
